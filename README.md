@@ -9,7 +9,7 @@ No apps. No accounts. No subscriptions. Just scan, pay, and unlock.
 
 ## What is this?
 
-A proof-of-concept demonstrating autonomous IoT payments using Coinbase's x402 protocol. Physical lockers that unlock when you pay with cryptocurrency—showcasing the future of machine-to-machine commerce and pay-per-use infrastructure.
+A proof-of-concept demonstrating autonomous IoT payments using Cronos's x402 protocol. Physical lockers that unlock when you pay with cryptocurrency—showcasing the future of machine-to-machine commerce and pay-per-use infrastructure.
 
 ## The Problem
 
@@ -67,21 +67,21 @@ The locker becomes an autonomous economic agent—earning money and providing se
        │
        ↓ WebSocket/Serial
 ┌─────────────────┐
-│  ESP8266/Arduino│  Controls servo/solenoid
+│  ESP32/Arduino│  Controls servo/solenoid
 │  (Physical Lock)│  Unlocks on verified payment
 └─────────────────┘
        │
        ↓ Smart Contract Events
 ┌─────────────────┐
-│   Base Network  │  USDC payments recorded on-chain
+│   Cronos Network  │  USDC payments recorded on-chain
 │ (Blockchain)    │  Immutable payment history
 └─────────────────┘
 ```
 
 ## Tech Stack
 
-- **Hardware**: ESP8266 + Servo motors
-- **Smart Contract**: Solidity on Base network (EVM)
+- **Hardware**: ESP32 + Servo motors + RFID
+- **Smart Contract**: Solidity on Cronos (EVM)
 - **Backend**: Node.js + Express + WebSocket
 - **Frontend**: React + wagmi/viem for Web3
 - **Payment**: USDC stablecoin (low fees, fast confirmation)
