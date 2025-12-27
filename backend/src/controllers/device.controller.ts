@@ -3,6 +3,15 @@ import { HttpCode } from '../lib/interfaces/api.interface.js';
 import { Device } from '../models/device.model.js';
 
 export class DeviceController {
+    public async getAllDevices(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const devices = await Device.find();
+            return res.status(HttpCode.Ok).json(devices);
+        } catch (e) {
+            next(e);
+        }
+    }
+
     
     public async registerDevice(req: Request, res: Response, next: NextFunction): Promise<Response | void>  {
         try {

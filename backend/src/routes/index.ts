@@ -2,6 +2,7 @@ import * as express from 'express';
 import bodyParser from 'body-parser';
 
 import resourceRouter from './resource.routes.js';
+import deviceRouter from './device.routes.js';
 
 /**
  * Registers application-wide middleware and routes.
@@ -35,4 +36,8 @@ export const register = (app: express.Application): void => {
    * Mounts all resource-related routes under the `/api` path prefix.
    */
   app.use('/api', resourceRouter);
+  /**
+   * Mounts all device-related routes under the `/api/devices` path prefix.
+   */
+  app.use('/api/devices', deviceRouter);
 };
