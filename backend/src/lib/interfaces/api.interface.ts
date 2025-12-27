@@ -33,6 +33,9 @@ export enum HttpCode {
   /** Request was well-formed but could not be processed. */
   UnproccessableEntity = 422,
 
+  /** Resource already exists or request conflicts with current state. */
+  Conflict = 409,
+
   /** An unexpected server-side error occurred. */
   InternalServerError = 500,
 
