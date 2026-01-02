@@ -2,13 +2,13 @@
   "name": "@cronos/backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "lint": "eslint ./src --fix",
     "prebuild": "npm run lint",
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "node dist/index.js",
+    "start": "node ./dist/index.js",
     "dev": "nodemon --watch src -e ts --exec npm run start",
     "test": "jest"
   },
