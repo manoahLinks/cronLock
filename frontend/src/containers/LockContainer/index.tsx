@@ -94,8 +94,8 @@ export default function LockerPayment() {
               <Lock className="w-8 h-8 text-indigo-600" />
             )}
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Smart Locker</h1>
-          <p className="text-gray-600">Pay-per-use with crypto</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">CronLock</h1>
+          <p className="text-gray-600">Pay-per-use with crypto <span className='text-green-600 font-bold'>x402</span></p>
         </div>
 
         {/* Locker Selection */}
@@ -212,11 +212,11 @@ export default function LockerPayment() {
         <div className="mt-8 pt-6 border-t border-gray-200">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">Price per hour</span>
-            <span className="font-semibold text-gray-800">0.05 USDC</span>
+            <span className="font-semibold text-gray-800">1 USDC.e</span>
           </div>
           <div className="flex items-center justify-between text-sm mt-2">
             <span className="text-gray-500">Network</span>
-            <span className="font-semibold text-gray-800">Base</span>
+            <span className="font-semibold text-gray-800">Cronos_testnet</span>
           </div>
         </div>
       </div>
