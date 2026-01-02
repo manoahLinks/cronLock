@@ -10,6 +10,10 @@ const port = process.env.PORT || 8787;
 app.use(cors());
 app.use(logger);
 
+app.get('/', async (req, res) => {
+  res.send('Welcome to CronLock API...')
+})
+
 routes.register(app);
 
 const startServer = async () => {
