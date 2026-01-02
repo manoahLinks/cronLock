@@ -19,6 +19,8 @@
   "dependencies": {
     "@crypto.com/facilitator-client": "^1.0.1",
     "@types/react-google-recaptcha": "^2.1.9",
+    "lucide": "^0.562.0",
+    "lucide-react": "^0.562.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-google-recaptcha": "^3.1.0",
