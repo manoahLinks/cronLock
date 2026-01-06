@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Unlock, CreditCard, Check, AlertCircle, Currency } from 'lucide-react';
+import { useFetch } from '../../hooks/useFetch';
 
 export default function LockerPayment() {
   const [deviceId, setDeviceId] = useState('locker_001');
@@ -10,8 +11,11 @@ export default function LockerPayment() {
     network: 'Cronos_testnet'
   });
   const [error, setError] = useState('');
-  
+
   const SERVER_URL = 'https://cron-lock.vercel.app';
+  
+  const { data, error: fetchError, loading } = useFetch(`${SERVER_URL}/api/devices`);
+  console.log(data);
 
   const requestUnlock = async () => {
     setStatus('requesting');
@@ -57,7 +61,6 @@ export default function LockerPayment() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify({
           paymentProof: mockPaymentProof
@@ -109,9 +112,9 @@ export default function LockerPayment() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             disabled={status !== 'idle'}
           >
-            <option value="locker_001">Locker #1</option>
-            <option value="locker_002">Locker #2</option>
-            <option value="locker_003">Locker #3</option>
+            {data && data?.map((device: any) => (
+              <option key={device.deviceId} value={device.deviceId}>{device.description}</option>
+            ))}
           </select>
         </div>
 
