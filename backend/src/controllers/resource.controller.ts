@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { HttpCode } from '../lib/interfaces/api.interface.js';
 import { ResourceService } from '../services/resource.service.js';
+import { Device } from '../models/device.model.js';
 
 /**
  * Express controller for resource-related endpoints.
@@ -76,7 +77,7 @@ export class ResourceController {
    */
   public async pay(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
-      const { paymentId, paymentHeader, paymentRequirements } = req.body ?? {};
+      const { paymentId, paymentHeader, paymentRequirements, deviceId } = req.body ?? {};
 
       if (!paymentId || !paymentHeader || !paymentRequirements) {
         return res.status(HttpCode.BadRequest).json({ error: 'missing payment fields' });
@@ -91,6 +92,8 @@ export class ResourceController {
       if (!response.ok) {
         return res.status(HttpCode.BadRequest).json(response);
       }
+      
+      await Device.findOneAndUpdate({deviceId}, {isActive: true});
 
       return res.json(response);
     } catch (e) {
