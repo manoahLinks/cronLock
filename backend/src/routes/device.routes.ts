@@ -7,5 +7,6 @@ const router = express.Router();
 router.post('/', controller.registerDevice.bind(controller));
 router.get('/', controller.getAllDevices.bind(controller));
 router.get('/:deviceId', controller.getDevice.bind(controller));
+router.get('/:deviceId/status', controller.checkPaymentStatus.bind(controller));
 
 export default router;
