@@ -60,10 +60,33 @@ export class DeviceController {
             if (!device) {
                 return res.status(HttpCode.NotFound).json({ error: 'Device not found' });
             }
-            
+
             if (device.isActive == true) {return res.status(HttpCode.Ok).json(device)};
             
             return res.status(HttpCode.PaymentRequired).json(device);
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    public async disableDevice (req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const { deviceId } = req.params;
+            if (!deviceId) {
+                return res.status(HttpCode.BadRequest).json({ error: 'Device ID required' });
+            }
+            const device = await Device.findOne({ deviceId });
+            if (!device) {
+                return res.status(HttpCode.NotFound).json({ error: 'Device not found' });
+            }
+
+            if (device.isActive == true) {
+                device.isActive = false;
+                await device.save()
+                return res.status(HttpCode.Ok).json(device)
+            };
+            
+            return res.status(HttpCode.Ok).json(device);
         } catch (e) {
             next(e);
         }
