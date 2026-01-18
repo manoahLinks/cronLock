@@ -77,7 +77,9 @@ export class ResourceController {
    */
   public async pay(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
-      const { paymentId, paymentHeader, paymentRequirements, deviceId } = req.body ?? {};
+      const { paymentId, paymentHeader, paymentRequirements } = req.body ?? {};
+
+      const deviceId = 'LOCK_34865D3A332C';
 
       if (!paymentId || !paymentHeader || !paymentRequirements) {
         return res.status(HttpCode.BadRequest).json({ error: 'missing payment fields' });
@@ -93,7 +95,9 @@ export class ResourceController {
         return res.status(HttpCode.BadRequest).json(response);
       }
       
-      await Device.findOneAndUpdate({deviceId}, {isActive: true});
+      const resp = await Device.findOneAndUpdate({deviceId: deviceId}, {isActive: true}, {new: true});
+    
+      console.log(resp)
 
       return res.json(response);
     } catch (e) {

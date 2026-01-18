@@ -61,11 +61,11 @@ export class DeviceController {
                 return res.status(HttpCode.NotFound).json({ error: 'Device not found' });
             }
 
-            if (device.isActive == true) {return res.status(HttpCode.Ok).json(device.isActive)};
+            if (device.isActive == true) {return res.status(HttpCode.Ok).json({status: device.isActive})};
             
-            return res.status(HttpCode.PaymentRequired).json(device.isActive);
+            return res.status(HttpCode.PaymentRequired).json({status: device.isActive});
         } catch (e) {
-            next(e);
+            next(e)
         }
     }
 
@@ -83,10 +83,10 @@ export class DeviceController {
             if (device.isActive == true) {
                 device.isActive = false;
                 await device.save()
-                return res.status(HttpCode.Ok).json(device.isActive)
+                return res.status(HttpCode.Ok).json({status: device.isActive})
             };
             
-            return res.status(HttpCode.Ok).json(device.isActive);
+            return res.status(HttpCode.Ok).json({status: device.isActive});
         } catch (e) {
             next(e);
         }

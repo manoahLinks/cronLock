@@ -16,7 +16,9 @@ const char* ssid     = "AwesomeuncleB";
 const char* password = "Awesomelyuncleb";
 
 // ---------------- PAYMENT API ----------------
-const char* apiURL = "put the key here";
+const char* apiBaseURL = "https://cron-lock.vercel.app/api/devices/";
+String deviceId = "";
+String fullAPIURL = "";
 
 // ---------------- AUTHORIZED UID ----------------
 byte authorizedUID[4] = {0x6A, 0x17, 0x41, 0xB4};
@@ -30,6 +32,21 @@ void lcdSim(String line1, String line2) {
   Serial.print("Line 2: ");
   Serial.println(line2);
   Serial.println("----------------");
+}
+
+// ---------------- GENERATE DEVICE ID ----------------
+String generateDeviceId() {
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  
+  String macStr = "LOCK_";
+  for (int i = 0; i < 6; i++) {
+    if (mac[i] < 16) macStr += "0";
+    macStr += String(mac[i], HEX);
+  }
+  macStr.toUpperCase();
+  
+  return macStr;
 }
 
 void setup() {
@@ -53,6 +70,13 @@ void setup() {
 
   Serial.println("\nWiFi Connected");
   Serial.println(WiFi.localIP());
+
+  // Generate Device ID from MAC address
+  deviceId = generateDeviceId();
+  fullAPIURL = String(apiBaseURL) + deviceId + "/status";
+  
+  Serial.println("Device ID: " + deviceId);
+  Serial.println("API URL: " + fullAPIURL);
 
   lcdSim("Door System", "Scan Card");
 }
@@ -90,13 +114,13 @@ void loop() {
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    http.begin(apiURL);
+    http.begin(fullAPIURL);
     http.addHeader("Content-Type", "application/json");
 
     // Minimal payload (optional, API still works if ignored)
     String payload = "{ \"uid\": \"6A1741B4\" }";
 
-    int httpCode = http.POST(payload);
+    int httpCode = http.GET();
 
     Serial.print("HTTP Status Code: ");
     Serial.println(httpCode);
