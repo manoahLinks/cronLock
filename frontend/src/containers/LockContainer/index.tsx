@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import { Lock, Unlock, CreditCard, Check, AlertCircle, Currency } from 'lucide-react';
 import { useFetch } from '../../hooks/useFetch';
+import { useX402Flow } from '../../hooks/useX402Flow';
+import { ActionButtons } from '../../components/ActionButtons';
 
-export default function LockerPayment() {
+export interface LockContainerProps {
+  apiBase: string;
+}
+
+export default function LockerPayment(props: LockContainerProps) {
   const [deviceId, setDeviceId] = useState('locker_001');
   const [status, setStatus] = useState('idle'); // idle, requesting, paying, unlocking, success, error
   const [paymentDetails, setPaymentDetails] = useState({
@@ -11,6 +17,10 @@ export default function LockerPayment() {
     network: 'Cronos_testnet'
   });
   const [error, setError] = useState('');
+
+  const { status: flowStatus, data: flowData, paymentId, fetchSecret, retryWithPaymentId } = useX402Flow({
+    apiBase: props.apiBase,
+  });
 
   const SERVER_URL = 'https://cron-lock.vercel.app';
   
@@ -119,7 +129,7 @@ export default function LockerPayment() {
         </div>
 
         {/* Status Display */}
-        {status === 'idle' && (
+        {/* {status === 'idle' && (
           <button
             onClick={requestUnlock}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -127,14 +137,22 @@ export default function LockerPayment() {
             <Unlock className="w-5 h-5" />
             Request Unlock
           </button>
-        )}
+        )} */}
 
-        {status === 'requesting' && (
+        <ActionButtons
+          onFetch={() => void fetchSecret()}
+          onRetry={() => void retryWithPaymentId()}
+          retryDisabled={!paymentId}
+        />
+
+        {flowStatus && !paymentId && (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Checking availability...</p>
+            <p className="text-gray-600">Loading...</p>
           </div>
         )}
+
+        {paymentId && <p className="text-gray-600">Loading...</p>}
 
         {status === 'paying' && paymentDetails && (
           <div className="space-y-4">
