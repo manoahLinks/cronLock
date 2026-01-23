@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Lock, Unlock, CreditCard, Check, AlertCircle, Loader2, Clock, Wallet } from 'lucide-react';
 import { useFetch } from '../../hooks/useFetch';
 import { useX402Flow } from '../../hooks/useX402Flow';
@@ -7,18 +7,25 @@ export interface LockContainerProps {
   apiBase: string;
 }
 
+interface Device {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
+
 export default function LockerPayment(props: LockContainerProps) {
   const [deviceId, setDeviceId] = useState('locker_001');
   const [countdown, setCountdown] = useState(60);
   
   const SERVER_URL = 'https://cron-lock.vercel.app';
+
+  let flowError = null;
   
   // Fetch available devices
-  const { data: devices } = useFetch(`${SERVER_URL}/api/devices`);
+  const { data: devices } = useFetch<Device[]>(`${SERVER_URL}/api/devices`);
 
-  const {data: device} = useFetch(`${SERVER_URL}/api/devices/${deviceId}`);
-
-  console.log(device)
+  // const {data: device} = useFetch(`${SERVER_URL}/api/devices/${deviceId}`);
   
   // X402 payment flow - THIS IS THE SOURCE OF TRUTH
   const { 
@@ -27,13 +34,13 @@ export default function LockerPayment(props: LockContainerProps) {
     paymentId,               // ← Show when this exists
     fetchSecret,             // ← Initial unlock request
     retryWithPaymentId,      // ← Call when paymentId is ready
-    error: flowError 
+    // error: flowError 
   } = useX402Flow({
     apiBase: props.apiBase,
   });
 
   // Simple derived states
-  const isIdle = !flowStatus && !paymentId && !unlockData && !flowError;
+  const isIdle = !flowStatus && !paymentId && !unlockData ;
   const isLoading = flowStatus === 'loading';
   const needsPayment = flowStatus === 'payment-required' && !paymentId;
   const hasPaymentId = !!paymentId;
@@ -135,7 +142,7 @@ export default function LockerPayment(props: LockContainerProps) {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             disabled={!isIdle}
           >
-            {devices?.map((device: any) => (
+            {devices && devices?.map((device: any) => (
               <option key={device.deviceId} value={device.deviceId}>
                 {device.description}
               </option>

@@ -10,7 +10,7 @@ import { ensureCronosChain } from '../utils/cronos';
  */
 export interface UseX402FlowOptions {
   /**
-   * Base URL of the API server (e.g. `http://localhost:8787`).
+
    */
   apiBase: string;
 }
