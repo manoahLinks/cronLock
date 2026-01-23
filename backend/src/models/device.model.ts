@@ -6,14 +6,16 @@ export interface IDevice extends Document {
   address: string;
   price: number;
   isActive: boolean;
+  lockTime: number
 }
 
 const DeviceSchema = new Schema<IDevice>({
   deviceId: { type: String, required: true, unique: true },
   description: { type: String, required: true },
   address: {type: String},
-  price: {type: Number},
-  isActive: {type: Boolean, default: false}
+  price: {type: Number, default: 0},
+  isActive: {type: Boolean, default: false},
+  lockTime: {type: Number}
 });
 
 export const Device = mongoose.model<IDevice>('Device', DeviceSchema);

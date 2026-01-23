@@ -95,7 +95,7 @@ export class ResourceController {
         return res.status(HttpCode.BadRequest).json(response);
       }
       
-      const resp = await Device.findOneAndUpdate({deviceId: deviceId}, {isActive: true}, {new: true});
+      const resp = await Device.findOneAndUpdate({deviceId: deviceId}, {isActive: true, lockTime: Date.now()}, {new: true});
     
       console.log(resp)
 
