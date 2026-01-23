@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Lock, Unlock, CreditCard, Check, AlertCircle, Currency } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Unlock, CreditCard, Check, AlertCircle, Loader2, Clock, Wallet } from 'lucide-react';
 import { useFetch } from '../../hooks/useFetch';
 import { useX402Flow } from '../../hooks/useX402Flow';
-import { ActionButtons } from '../../components/ActionButtons';
 
 export interface LockContainerProps {
   apiBase: string;
@@ -10,106 +9,120 @@ export interface LockContainerProps {
 
 export default function LockerPayment(props: LockContainerProps) {
   const [deviceId, setDeviceId] = useState('locker_001');
-  const [status, setStatus] = useState('idle'); // idle, requesting, paying, unlocking, success, error
-  const [paymentDetails, setPaymentDetails] = useState({
-    amount: 5,
-    currency: 'USDC.e',
-    network: 'Cronos_testnet'
-  });
-  const [error, setError] = useState('');
+  const [countdown, setCountdown] = useState(60);
+  
+  const SERVER_URL = 'https://cron-lock.vercel.app';
+  
+  // Fetch available devices
+  const { data: devices } = useFetch(`${SERVER_URL}/api/devices`);
 
-  const { status: flowStatus, data: flowData, paymentId, fetchSecret, retryWithPaymentId } = useX402Flow({
+  const {data: device} = useFetch(`${SERVER_URL}/api/devices/${deviceId}`);
+
+  console.log(device)
+  
+  // X402 payment flow - THIS IS THE SOURCE OF TRUTH
+  const { 
+    status: flowStatus,      // ← Display this directly
+    data: unlockData, 
+    paymentId,               // ← Show when this exists
+    fetchSecret,             // ← Initial unlock request
+    retryWithPaymentId,      // ← Call when paymentId is ready
+    error: flowError 
+  } = useX402Flow({
     apiBase: props.apiBase,
   });
 
-  const SERVER_URL = 'https://cron-lock.vercel.app';
-  
-  const { data, error: fetchError, loading } = useFetch(`${SERVER_URL}/api/devices`);
-  console.log(data);
+  // Simple derived states
+  const isIdle = !flowStatus && !paymentId && !unlockData && !flowError;
+  const isLoading = flowStatus === 'loading';
+  const needsPayment = flowStatus === 'payment-required' && !paymentId;
+  const hasPaymentId = !!paymentId;
+  const isSuccess = !!unlockData;
+  const hasError = !!flowError;
 
-  const requestUnlock = async () => {
-    setStatus('requesting');
-    setError('');
-    
-    try {
-      const response = await fetch(`${SERVER_URL}/api/devices/${deviceId}/unlock`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (response.status === 402) {
-        // Payment required
-        setPaymentDetails(data.payment);
-        setStatus('paying');
-      } else if (response.ok) {
-        // Already unlocked
-        setStatus('success');
-        setTimeout(() => setStatus('idle'), 3000);
-      } else {
-        setError(data.error || 'Failed to request unlock');
-        setStatus('error');
-      }
-    } catch (err) {
-      setError('Network error. Check server connection.');
-      setStatus('error');
+  // Auto-lock countdown after success
+  useEffect(() => {
+    if (isSuccess) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            window.location.reload();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    } else {
+      setCountdown(30);
     }
-  };
-
-  const processPayment = async () => {
-    setStatus('unlocking');
-    
-    // Simulate payment (in production, use Web3 wallet)
-    const mockPaymentProof = '0x' + Math.random().toString(16).slice(2, 66);
-    
-    try {
-      const response = await fetch(`${SERVER_URL}/api/devices/${deviceId}/unlock`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          paymentProof: mockPaymentProof
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setStatus('success');
-        setTimeout(() => {
-          setStatus('idle');
-          // setPaymentDetails(null);
-        }, 5000);
-      } else {
-        setError(data.error || 'Payment verification failed');
-        setStatus('error');
-      }
-    } catch (err) {
-      setError('Payment failed. Please try again.');
-      setStatus('error');
-    }
-  };
+  }, [isSuccess]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
-            {status === 'success' ? (
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+            isSuccess ? 'bg-green-100' :
+            hasError ? 'bg-red-100' :
+            hasPaymentId ? 'bg-blue-100' :
+            needsPayment ? 'bg-yellow-100' :
+            'bg-indigo-100'
+          }`}>
+            {isSuccess ? (
               <Unlock className="w-8 h-8 text-green-600" />
+            ) : hasError ? (
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            ) : hasPaymentId ? (
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            ) : needsPayment ? (
+              <Wallet className="w-8 h-8 text-yellow-600" />
+            ) : isLoading ? (
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
             ) : (
               <Lock className="w-8 h-8 text-indigo-600" />
             )}
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">CronLock</h1>
-          <p className="text-gray-600">Pay-per-use with crypto <span className='text-green-600 font-bold'>x402</span></p>
+          <p className="text-gray-600">
+            Pay-per-use with crypto <span className="text-green-600 font-bold">x402</span>
+          </p>
         </div>
+
+        {/* LIVE STATUS DISPLAY - Shows flowStatus directly */}
+        {flowStatus && (
+          <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-indigo-900">
+                Current Status: <span className="font-mono">{flowStatus}</span>
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* PAYMENT ID DISPLAY - Shows when paymentId exists */}
+        {paymentId && (
+          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs text-blue-700 mb-1 font-semibold"> Payment ID Ready</p>
+            <p className="text-xs text-blue-900 font-mono break-all">{paymentId}</p>
+          </div>
+        )}
+
+        {/* ERROR DISPLAY */}
+        {flowError && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-red-700 font-semibold mb-1">Error</p>
+                <p className="text-xs text-red-900">{flowError}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Locker Selection */}
         <div className="mb-6">
@@ -119,115 +132,104 @@ export default function LockerPayment(props: LockContainerProps) {
           <select
             value={deviceId}
             onChange={(e) => setDeviceId(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            disabled={status !== 'idle'}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+            disabled={!isIdle}
           >
-            {data && data?.map((device: any) => (
-              <option key={device.deviceId} value={device.deviceId}>{device.description}</option>
+            {devices?.map((device: any) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.description}
+              </option>
             ))}
           </select>
         </div>
 
-        {/* Status Display */}
-        {/* {status === 'idle' && (
-          <button
-            onClick={requestUnlock}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-          >
-            <Unlock className="w-5 h-5" />
-            Request Unlock
-          </button>
-        )} */}
-
-        <ActionButtons
-          onFetch={() => void fetchSecret()}
-          onRetry={() => void retryWithPaymentId()}
-          retryDisabled={!paymentId}
-        />
-
-        {flowStatus && !paymentId && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        )}
-
-        {paymentId && <p className="text-gray-600">Loading...</p>}
-
-        {status === 'paying' && paymentDetails && (
-          <div className="space-y-4">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <CreditCard className="w-5 h-5 text-yellow-600 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-yellow-900 mb-1">Payment Required</h3>
-                  <p className="text-sm text-yellow-800">
-                    Amount: <span className="font-bold">{paymentDetails.amount} {paymentDetails.currency}</span>
-                  </p>
-                  <p className="text-xs text-yellow-700 mt-1">
-                    Network: {paymentDetails.network}
-                  </p>
-                </div>
-              </div>
-            </div>
-
+        {/* ACTION BUTTONS */}
+        <div className="space-y-3">
+          {/* Button 1: Initial Unlock Request */}
+          {isIdle && (
             <button
-              onClick={processPayment}
+              onClick={() => fetchSecret()}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <Unlock className="w-5 h-5" />
+              Request Unlock (Fetch Secret)
+            </button>
+          )}
+
+          {/* Button 2: Retry with Payment ID */}
+          {paymentId && (
+            <button
+              disabled
+              onClick={() => retryWithPaymentId()}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <CreditCard className="w-5 h-5" />
-              Pay {paymentDetails.amount} {paymentDetails.currency}
+              Retry with Payment ID
             </button>
+          )}
 
-            <p className="text-xs text-gray-500 text-center">
-              In production, this will connect to your wallet
-            </p>
-          </div>
-        )}
-
-        {status === 'unlocking' && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Verifying payment...</p>
-            <p className="text-sm text-gray-500 mt-2">Sending unlock command</p>
-          </div>
-        )}
-
-        {status === 'success' && (
-          <div className="text-center py-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <Check className="w-8 h-8 text-green-600" />
+          {/* Loading State */}
+          {isLoading && !paymentId && (
+            <div className="text-center py-4">
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-gray-600">Processing request...</p>
             </div>
-            <h3 className="text-xl font-bold text-green-600 mb-2">Unlocked!</h3>
-            <p className="text-gray-600">Your locker is now open</p>
-            <p className="text-sm text-gray-500 mt-2">Auto-locks in 30 seconds</p>
-          </div>
-        )}
+          )}
 
-        {status === 'error' && (
-          <div className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          {/* Payment Required (402) */}
+          {needsPayment && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                <CreditCard className="w-5 h-5 text-yellow-600 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-red-900 mb-1">Error</h3>
-                  <p className="text-sm text-red-800">{error}</p>
+                  <h3 className="font-semibold text-yellow-900 mb-1">Payment Required</h3>
+                  <p className="text-sm text-yellow-800">Amount: <span className="font-bold">5 USDC.e</span></p>
+                  <p className="text-xs text-yellow-700 mt-1">Network: Cronos Testnet</p>
+                  <p className="text-xs text-yellow-600 mt-2">
+                    Sign the transaction in MetaMask to get a Payment ID
+                  </p>
                 </div>
               </div>
             </div>
+          )}
 
+          {/* Success State */}
+          {isSuccess && (
+            <div className="text-center py-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                <Check className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-green-600 mb-2">🎉 Unlocked!</h3>
+              <p className="text-gray-600 mb-4">Your locker is now open</p>
+              
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 inline-block">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-green-600" />
+                  <span className="text-sm text-green-800">Auto-lock in <span className="font-bold text-lg">{countdown}s</span></span>
+                </div>
+              </div>
+
+              {unlockData && (
+                <details className="mt-4 text-left">
+                  <summary className="text-xs text-gray-600 cursor-pointer">Show response data</summary>
+                  <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
+                    {JSON.stringify(unlockData, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </div>
+          )}
+
+          {/* Error State - Retry */}
+          {hasError && (
             <button
-              onClick={() => {
-                setStatus('idle');
-                setError('');
-                // setPaymentDetails(null);
-              }}
+              onClick={() => window.location.reload()}
               className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
             >
               Try Again
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Info Footer */}
         <div className="mt-8 pt-6 border-t border-gray-200">
@@ -237,7 +239,22 @@ export default function LockerPayment(props: LockContainerProps) {
           </div>
           <div className="flex items-center justify-between text-sm mt-2">
             <span className="text-gray-500">Network</span>
-            <span className="font-semibold text-gray-800">Cronos_testnet</span>
+            <span className="font-semibold text-gray-800">Cronos Testnet</span>
+          </div>
+
+          {/* Debug State Summary */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <details className="text-xs">
+              <summary className="text-gray-500 cursor-pointer hover:text-gray-700">
+                Debug Info
+              </summary>
+              <div className="mt-2 space-y-1 bg-gray-50 p-2 rounded">
+                <p><span className="font-semibold">flowStatus:</span> {flowStatus || 'null'}</p>
+                <p><span className="font-semibold">paymentId:</span> {paymentId ? 'Yes ✓' : 'No'}</p>
+                <p><span className="font-semibold">unlockData:</span> {unlockData ? 'Yes ✓' : 'No'}</p>
+                <p><span className="font-semibold">flowError:</span> {flowError || 'None'}</p>
+              </div>
+            </details>
           </div>
         </div>
       </div>
